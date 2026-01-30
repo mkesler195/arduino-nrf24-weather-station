@@ -1,0 +1,81 @@
+#include <SPI.h>
+#include <NRFLite.h>
+#include <math.h>
+
+NRFLite radio;
+
+const uint8_t RADIO_ID = 2;
+const uint8_t DEST_ID  = 0;
+
+const uint8_t PIN_CE  = 9;
+const uint8_t PIN_CSN = 10;
+
+const uint8_t THERM_PIN = A0;
+
+// Thermistor divider: 5V -> NTC -> A0 -> 10k -> GND
+const float R_FIXED = 10000.0;
+const float R0   = 10000.0;
+const float T0_K = 298.15;
+const float BETA = 3950.0;
+
+// PACKED so byte layout is identical
+struct __attribute__((packed)) WxPacket {
+  uint8_t  nodeId;
+  uint32_t seq;
+  int16_t  tempC_x100;
+  uint16_t press_hPa_x10;
+};
+
+uint32_t seq = 0;
+
+float readTempC() {
+  const int samples = 20;
+  long sum = 0;
+  for (int i = 0; i < samples; i++) {
+    sum += analogRead(THERM_PIN);
+    delay(5);
+  }
+  float adc = sum / (float)samples;
+  if (adc < 1) adc = 1;
+  if (adc > 1022) adc = 1022;
+
+  float rTherm = R_FIXED * (1023.0 / adc - 1.0);
+
+  float invT = (1.0 / T0_K) + (1.0 / BETA) * log(rTherm / R0);
+  float tempK = 1.0 / invT;
+  return tempK - 273.15;
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(200);
+
+  if (!radio.init(RADIO_ID, PIN_CE, PIN_CSN)) {
+    Serial.println("Radio init failed!");
+    while (1) delay(1000);
+  }
+
+  Serial.print("sizeof(WxPacket)=");
+  Serial.println(sizeof(WxPacket));
+}
+
+void loop() {
+  float tempC = readTempC();
+
+  WxPacket p{};
+  p.nodeId = RADIO_ID;
+  p.seq = seq++;
+  p.tempC_x100 = (int16_t)lround(tempC * 100.0);
+  p.press_hPa_x10 = 0; // Node 2 has no pressure sensor
+
+  bool ok = radio.send(DEST_ID, &p, sizeof(p));
+
+  Serial.print("Sent seq=");
+  Serial.print(p.seq);
+  Serial.print(" tempF=");
+  Serial.print(tempC * 9.0 / 5.0 + 32.0, 2);
+  Serial.print(" ok=");
+  Serial.println(ok ? "Y" : "N");
+
+  delay(1000);
+}
