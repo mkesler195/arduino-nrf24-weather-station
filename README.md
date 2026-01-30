@@ -4,8 +4,10 @@ This repository documents a modular Arduino-based wireless weather station built
 
 ## Current Status
 
-- Base station hardware and firmware are implemented and documented
-- Remote sensor nodes are planned but not yet documented
+- Base station hardware + firmware implemented ✅
+- Remote Station 1 (BMP280) implemented + diagram ✅
+- Remote Station 2 (thermistor) implemented ✅
+- Base display alternates Node 1 / Node 2 every ~5s ✅
 
 ## System Overview
 
