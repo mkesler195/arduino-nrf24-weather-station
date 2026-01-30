@@ -1,0 +1,69 @@
+#include <Wire.h>
+#include <SPI.h>
+#include <NRFLite.h>
+#include <Adafruit_BMP280.h>
+
+struct WxPacket {
+  uint8_t nodeId;
+  uint32_t seq;
+  int16_t tempC_x100;       // 2345 = 23.45°C
+  uint16_t press_hPa_x10;   // 10132 = 1013.2 hPa
+};
+
+const uint8_t RADIO_ID = 1;
+const uint8_t DEST_ID  = 0;
+
+NRFLite radio;
+Adafruit_BMP280 bmp;
+
+uint32_t seq = 0;
+
+void setup() {
+  Serial.begin(115200);
+  while (!Serial) {}
+
+  Wire.begin();
+
+  if (!bmp.begin(0x76) && !bmp.begin(0x77)) {
+    Serial.println("BMP280 not found at 0x76 or 0x77.");
+    while (1) delay(100);
+  }
+
+  bmp.setSampling(
+    Adafruit_BMP280::MODE_NORMAL,
+    Adafruit_BMP280::SAMPLING_X2,
+    Adafruit_BMP280::SAMPLING_X16,
+    Adafruit_BMP280::FILTER_X16,
+    Adafruit_BMP280::STANDBY_MS_500
+  );
+
+  if (!radio.init(RADIO_ID, 9, 10)) {
+    Serial.println("NRF init failed");
+    while (1) delay(100);
+  }
+
+  Serial.println("BMP TX ready");
+}
+
+void loop() {
+  float tempC = bmp.readTemperature();
+  float presshPa = bmp.readPressure() / 100.0f;
+
+  WxPacket p;
+  p.nodeId = RADIO_ID;
+  p.seq = seq++;
+  p.tempC_x100 = (int16_t)(tempC * 100.0f + (tempC >= 0 ? 0.5f : -0.5f));
+  p.press_hPa_x10 = (uint16_t)(presshPa * 10.0f + 0.5f);
+
+  bool ok = radio.send(DEST_ID, &p, sizeof(p), NRFLite::NO_ACK);
+
+  Serial.print("Sent seq=");
+  Serial.print(p.seq);
+  Serial.print("  T=");
+  Serial.print(tempC, 2);
+  Serial.print("C  P=");
+  Serial.print(presshPa, 1);
+  Serial.println(ok ? "  OK" : "  FAIL");
+
+  delay(1000);
+}
