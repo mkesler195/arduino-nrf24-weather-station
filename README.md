@@ -9,6 +9,10 @@ This repository documents a modular Arduino-based wireless weather station built
 - Remote Station 2 (thermistor) implemented ✅
 - Base display alternates Node 1 / Node 2 every ~5s ✅
 
+## Lessons Learned and Reminders
+- nRF24L01 power: VCC must be from Nano 3.3V (not breadboard 3.3V rail), with 100µF across VCC/GND at the radio.
+- Node ID + ACK: I'm using NRFLite with ACKs and seq counters (great for debugging).
+
 ## System Overview
 
 The weather station system is designed around a simple architecture:
@@ -23,6 +27,12 @@ The weather station system is designed around a simple architecture:
 - Battery-powered Arduino-compatible boards
 - Environmental sensors
 - nRF24L01 radios
+
+## Build & Run Notes
+- Install libraries (NRFLite, RTClib, Adafruit SSD1306/GFX, etc.)
+- Flash base-station/firmware/...
+- Flash remote-station-1/Firmware/...
+- Power notes (USB vs MB102 vs battery)
 
 ## Repository Structure
 
