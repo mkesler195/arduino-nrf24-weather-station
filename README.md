@@ -26,3 +26,8 @@ The weather station system is designed around a simple architecture:
 
 ## Repository Structure
 
+- base-station/firmware/ – Arduino Uno RX + OLED + DS3231
+- remote-station-1/Firmware/ – Nano TX + BMP280
+- remote-station-2/Firmware/ – Nano TX + thermistor (coming soon)
+- docs/diagrams/ – Fritzing diagrams + photos
+
